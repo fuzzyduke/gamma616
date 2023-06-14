@@ -1,0 +1,40 @@
+name: Data_Auto_Update_Tool
+
+env:
+  S3_KEY_ID: ${{ secrets.S3_KEY_ID }}
+  S3_ACCESS_KEY: ${{ secrets.S3_ACCESS_KEY }}
+  S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+  S3_OUTPUT_FOLDER: ${{ secrets.S3_OUTPUT_FOLDER || '' }}
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+          cache: "pip"
+      - run: |
+          pip install -r requirements.txt
+
+      - name: Data generating script
+        run: |
+          python main.py
+
+      - name: Upload data to S3
+        uses: Itheum/upload-s3-action@master
+        id: S3
+        with:
+          aws_key_id: ${{ env.S3_KEY_ID }}
+          aws_secret_access_key: ${{ env.S3_ACCESS_KEY }}
+          aws_bucket: ${{ env.S3_BUCKET_NAME }}
+          source_dir: output
+          destination_dir: ${{ env.S3_OUTPUT_FOLDER }}
